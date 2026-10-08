@@ -87,7 +87,7 @@ class _HomePageState extends State<HomePage> {
     final ok = store.saveAutosave(model.toProject());
     if (!ok && !_saveWarned) {
       _saveWarned = true;
-      _message('手機瀏覽器的儲存空間不足（可能是背景圖太大），目前圖面沒有自動保存；請用「匯出專案檔」備份。');
+      _message('手機瀏覽器的儲存空間不足（可能是背景圖太大），目前圖面沒有自動保存。');
     } else if (ok) {
       _saveWarned = false;
     }
@@ -138,81 +138,6 @@ class _HomePageState extends State<HomePage> {
     } on OutOfReachError catch (e) {
       _message(e.message);
     }
-  }
-
-  // ================================================================ 專案
-  Future<void> _newProject() async {
-    if (model.undoStack.canUndo &&
-        !await confirm(context, '開新專案', '目前的圖面會被清除（無法復原），確定嗎？\n（需要的話請先「儲存專案」）')) {
-      return;
-    }
-    canvas.setMode('select');
-    canvas.selectIds(const []);
-    model.reset();
-    canvas.resetView();
-  }
-
-  void _openProjectData(Map<String, Object?> data) {
-    final err = store.checkProject(data, model.spec.id);
-    if (err != null) {
-      _message(err);
-      return;
-    }
-    try {
-      canvas.setMode('select');
-      canvas.selectIds(const []);
-      model.loadProject(data);
-      canvas.resetView();
-    } catch (e) {
-      _message('專案檔內容有誤，無法開啟：$e');
-    }
-  }
-
-  Future<void> _myProjects() async {
-    await showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      showDragHandle: true,
-      builder: (ctx) => _ProjectsSheet(
-        onSave: (name) {
-          final ok = store.saveProject(name, model.toProject());
-          _message(ok ? '已儲存「$name」' : '手機瀏覽器的儲存空間不足，無法儲存（可能是背景圖太大）；請改用「匯出專案檔」。');
-        },
-        onOpen: (p) async {
-          if (model.undoStack.canUndo &&
-              !await confirm(context, '開啟專案', '目前的圖面會被「${p.name}」取代（無法復原），確定嗎？')) {
-            return;
-          }
-          _openProjectData(p.data);
-          _message('已開啟「${p.name}」');
-        },
-      ),
-    );
-  }
-
-  void _exportProject() {
-    final now = DateTime.now();
-    String two(int v) => v.toString().padLeft(2, '0');
-    final name = '吊車專案_${now.year}${two(now.month)}${two(now.day)}_${two(now.hour)}${two(now.minute)}.json';
-    io.downloadText(name, const JsonEncoder.withIndent(' ').convert(model.toProject()));
-    _message('已匯出「$name」（iPhone：在預覽畫面按分享 →「儲存到檔案」）');
-  }
-
-  Future<void> _importProject() async {
-    final f = await io.pickFile('.json,application/json,text/plain');
-    if (f == null) return;
-    Map<String, Object?> data;
-    try {
-      data = jsonDecode(utf8.decode(f.$3)) as Map<String, Object?>;
-    } catch (_) {
-      _message('「${f.$1}」不是有效的專案檔');
-      return;
-    }
-    if (!mounted) return;
-    if (model.undoStack.canUndo && !await confirm(context, '匯入專案', '目前的圖面會被「${f.$1}」取代（無法復原），確定嗎？')) {
-      return;
-    }
-    _openProjectData(data);
   }
 
   // ================================================================ 背景圖
@@ -335,7 +260,7 @@ class _HomePageState extends State<HomePage> {
               '離線 2D 吊車作業模擬：計算半徑、鉤底離地高度、額定荷重與吊臂淨空。'
               '計算核心與電腦版相同（可用選單的「自我檢查」在手機上逐筆比對）。\n\n'
               '僅供規劃參考。吊重表數據必須來自原廠操作手冊；實際吊掛仍以吊車荷重計（LMI）與合格人員判斷為準。\n\n'
-              '資料只存在這支手機的瀏覽器裡；換手機或清除瀏覽器資料前，請先「匯出專案檔」。\n\n'
+              '圖面自動保存在這支手機的瀏覽器裡（清除 Safari 網站資料會一起清掉）。\n\n'
               '中文字型：Noto Sans TC（SIL Open Font License 1.1）。'),
         ),
         actions: [
@@ -363,9 +288,9 @@ class _HomePageState extends State<HomePage> {
             '欄位\n'
             '• 點數值輸入，按鍵盤「完成」套用；−／＋ 微調，長按連續調整\n'
             '• 標題旁的 ⓘ 可看說明\n\n'
-            '專案\n'
-            '• 圖面會自動保存在這支手機；「我的專案」可命名保存多個\n'
-            '• 「匯出專案檔」可備份或傳到其他手機、電腦版');
+            '保存\n'
+            '• 圖面會自動保存在這支手機，下次打開還在\n'
+            '• 想清掉重來：用復原，或在物件頁刪除物件');
   }
 
   // ================================================================ 版面
@@ -420,11 +345,6 @@ class _HomePageState extends State<HomePage> {
       icon: const Icon(Icons.more_vert),
       onSelected: (fn) => fn(),
       itemBuilder: (_) => [
-        item('開新專案', Icons.note_add_outlined, _newProject),
-        item('我的專案（儲存／開啟）', Icons.folder_outlined, _myProjects),
-        item('匯出專案檔', Icons.ios_share, _exportProject),
-        item('匯入專案檔', Icons.file_open_outlined, _importProject),
-        const PopupMenuDivider(),
         item('重設視圖', Icons.fit_screen, canvas.resetView),
         check('顯示十字輔助線', canvas.showCrosshair, () => canvas.setOption(() => canvas.showCrosshair = !canvas.showCrosshair)),
         check('標示車體尺寸', canvas.showBodyDims, () => canvas.setOption(() => canvas.showBodyDims = !canvas.showBodyDims)),
@@ -701,84 +621,5 @@ class _HomePageState extends State<HomePage> {
         ),
       ]);
     });
-  }
-}
-
-// ====================================================================== 我的專案
-class _ProjectsSheet extends StatefulWidget {
-  final void Function(String name) onSave;
-  final void Function(store.SavedProject p) onOpen;
-
-  const _ProjectsSheet({required this.onSave, required this.onOpen});
-
-  @override
-  State<_ProjectsSheet> createState() => _ProjectsSheetState();
-}
-
-class _ProjectsSheetState extends State<_ProjectsSheet> {
-  @override
-  Widget build(BuildContext context) {
-    final list = store.listProjects();
-    String two(int v) => v.toString().padLeft(2, '0');
-    return SafeArea(
-      child: Padding(
-        padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
-        child: ConstrainedBox(
-          constraints: BoxConstraints(maxHeight: MediaQuery.sizeOf(context).height * 0.75),
-          child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Row(children: [
-                const Expanded(child: Text('我的專案', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700))),
-                FilledButton.icon(
-                  icon: const Icon(Icons.save_outlined, size: 18),
-                  label: const Text('儲存目前圖面'),
-                  onPressed: () async {
-                    final now = DateTime.now();
-                    final name = await askString(context, '儲存專案',
-                        label: '專案名稱（同名會覆蓋）',
-                        initial: '專案 ${now.month}/${now.day} ${two(now.hour)}:${two(now.minute)}');
-                    if (name == null || name.trim().isEmpty) return;
-                    widget.onSave(name.trim());
-                    setState(() {});
-                  },
-                ),
-              ]),
-            ),
-            const Padding(
-              padding: EdgeInsets.fromLTRB(16, 6, 16, 6),
-              child: Text('專案存在這支手機的瀏覽器裡；換手機或清除瀏覽器資料前，請用「匯出專案檔」備份。',
-                  style: TextStyle(color: k.textHint, fontSize: 12)),
-            ),
-            if (list.isEmpty)
-              const Padding(padding: EdgeInsets.all(16), child: Text('（還沒有儲存的專案）')),
-            Flexible(
-              child: ListView(shrinkWrap: true, children: [
-                for (final p in list)
-                  ListTile(
-                    leading: const Icon(Icons.description_outlined),
-                    title: Text(p.name),
-                    subtitle: Text('${p.saved.year}/${p.saved.month}/${p.saved.day} ${two(p.saved.hour)}:${two(p.saved.minute)}'),
-                    onTap: () {
-                      Navigator.pop(context);
-                      widget.onOpen(p);
-                    },
-                    trailing: IconButton(
-                      icon: const Icon(Icons.delete_outline),
-                      tooltip: '刪除',
-                      onPressed: () async {
-                        if (await confirm(context, '刪除專案', '確定刪除「${p.name}」？（無法復原）', ok: '刪除')) {
-                          store.deleteProject(p.name);
-                          setState(() {});
-                        }
-                      },
-                    ),
-                  ),
-              ]),
-            ),
-          ]),
-        ),
-      ),
-    );
   }
 }

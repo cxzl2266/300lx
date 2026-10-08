@@ -18,8 +18,6 @@ void storageRemove(String key) => _memory.remove(key);
 
 Future<String> fetchText(String url) => Future.error(UnsupportedError('只有網頁版可以讀取 $url'));
 
-void downloadText(String filename, String text, [String mime = 'application/json']) {}
-
 /// 選擇檔案：(檔名, MIME 類型, 內容)；取消時為 null。
 Future<(String, String, Uint8List)?> pickFile(String accept) async => null;
 

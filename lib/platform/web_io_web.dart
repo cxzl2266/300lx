@@ -85,37 +85,8 @@ extension type _File(JSObject _) implements JSObject {
   external JSPromise<JSArrayBuffer> arrayBuffer();
 }
 
-extension type _BlobOptions._(JSObject _) implements JSObject {
-  external factory _BlobOptions({JSString type});
-}
-
-@JS('Blob')
-extension type _Blob._(JSObject _) implements JSObject {
-  external factory _Blob(JSArray<JSAny> parts, _BlobOptions options);
-}
-
 @JS('document')
 external _Document get _document;
-
-@JS('URL.createObjectURL')
-external JSString _createObjectURL(JSObject blob);
-
-@JS('URL.revokeObjectURL')
-external void _revokeObjectURL(JSString url);
-
-/// 下載文字檔（iPhone 會跳出預覽，可「儲存到檔案」或分享）。
-void downloadText(String filename, String text, [String mime = 'application/json']) {
-  final blob = _Blob([text.toJS].toJS, _BlobOptions(type: '$mime;charset=utf-8'.toJS));
-  final url = _createObjectURL(blob);
-  final a = _document.createElement('a'.toJS)
-    ..href = url
-    ..download = filename.toJS;
-  a.setAttribute('style'.toJS, 'display:none'.toJS);
-  _document.body.appendChild(a);
-  a.click();
-  a.remove();
-  Timer(const Duration(seconds: 30), () => _revokeObjectURL(url));
-}
 
 /// 選擇檔案：(檔名, MIME 類型, 內容)；取消時為 null（舊版瀏覽器取消時不會有回應）。
 Future<(String, String, Uint8List)?> pickFile(String accept) {
