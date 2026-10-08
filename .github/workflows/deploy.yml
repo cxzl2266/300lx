@@ -1,0 +1,57 @@
+# 推送到 main 分支後：跑測試 → 建置網頁版 → 發布到 GitHub Pages
+# 網址：https://cxzl2266.github.io/300lx/
+# 第一次使用前：GitHub 儲存庫 Settings → Pages → Source 選「GitHub Actions」
+name: 部署到 GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: 3.47.6
+
+      - name: 下載套件
+        run: flutter pub get
+
+      - name: 測試（和電腦版逐筆比對、介面冒煙測試）
+        run: flutter test
+
+      - name: 建置網頁版
+        run: flutter build web --release --base-href /300lx/ --no-web-resources-cdn --no-wasm-dry-run
+
+      - name: 離線快取清單
+        run: python3 tool/make_sw.py build/web
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: build/web
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

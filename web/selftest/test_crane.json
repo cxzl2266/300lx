@@ -1,0 +1,37 @@
+{
+  "format_version": 1,
+  "id": "test_crane",
+  "name": "測試用吊車（無荷重表）",
+  "note": "只供自動測試使用，不在程式的吊車清單（數值沿用 2026-10-08 移除的示範 25t 吊車）。用來測試沒有荷重表、單一吊鉤、臂長與副臂連續可調、鉸點跟著車高移動等一般功能。",
+  "pivot": { "x": -2.20, "y": 3.44 },
+  "boom": {
+    "min_length": 8.00,
+    "max_length": 32.00,
+    "min_angle": 0.0,
+    "max_angle": 80.0,
+    "telescopic_sections": 4,
+    "width": 0.60,
+    "tip_deflection": 0.0
+  },
+  "jib": {
+    "available": true,
+    "min_length": 3.00,
+    "max_length": 10.00,
+    "default_length": 8.00,
+    "min_offset": 0.0,
+    "max_offset": 60.0,
+    "width": 0.25
+  },
+  "hook": {
+    "block_height": 1.00,
+    "overhoist": 0.50
+  },
+  "default_pose": { "length": 8.00, "angle": 60.0 },
+  "body": {
+    "total_length": 9.00,
+    "chassis_length": 8.70,
+    "height": 3.85,
+    "width": 2.50,
+    "front": 3.00
+  }
+}

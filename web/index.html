@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="zh-Hant-TW">
+<head>
+  <!-- --base-href 會替換這裡（GitHub Pages：/300lx/） -->
+  <base href="$FLUTTER_BASE_HREF">
+  <meta charset="UTF-8">
+  <meta content="IE=Edge" http-equiv="X-UA-Compatible">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="description" content="吊車作業模擬（KATO SR-300LX）：半徑、鉤底離地高度、額定荷重與吊臂淨空檢查。僅供規劃參考。">
+
+  <!-- iPhone「加入主畫面」 -->
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="吊車模擬">
+  <meta name="theme-color" content="#ffffff">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="icon" type="image/png" href="favicon.png">
+  <link rel="manifest" href="manifest.json">
+
+  <title>吊車作業模擬</title>
+  <style>
+    html, body { margin: 0; height: 100%; background: #f3f5f7; }
+    #loading {
+      position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
+      font-family: -apple-system, "PingFang TC", "Microsoft JhengHei", sans-serif; color: #1d2530; gap: 14px;
+    }
+    #loading img { width: 88px; height: 88px; border-radius: 20px; }
+    #loading .t { font-size: 20px; font-weight: 700; }
+    #loading .s { font-size: 13px; color: #7a8590; text-align: center; line-height: 1.6; padding: 0 24px; }
+    #loading .bar { width: 160px; height: 4px; border-radius: 2px; background: #d6dde4; overflow: hidden; }
+    #loading .bar i { display: block; width: 40%; height: 100%; background: #f29100; animation: run 1.2s infinite ease-in-out; }
+    @keyframes run { 0% { margin-left: -40%; } 100% { margin-left: 100%; } }
+    #update-bar {
+      position: fixed; left: 12px; right: 12px; bottom: calc(12px + env(safe-area-inset-bottom)); z-index: 1000;
+      background: #1467b0; color: #fff; border-radius: 10px; padding: 10px 14px; display: none;
+      font-family: -apple-system, "PingFang TC", "Microsoft JhengHei", sans-serif; font-size: 14px;
+      align-items: center; gap: 10px; box-shadow: 0 2px 10px rgba(0,0,0,.25);
+    }
+    #update-bar span { flex: 1; }
+    #update-bar button { background: #fff; color: #1467b0; border: 0; border-radius: 6px; padding: 6px 12px; font-size: 14px; font-weight: 700; }
+    #safe-probe {
+      position: fixed; left: 0; top: 0; width: 0; height: 0; visibility: hidden; pointer-events: none;
+      padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+    }
+  </style>
+</head>
+<body>
+  <div id="loading">
+    <img src="icons/Icon-192.png" alt="">
+    <div class="t">吊車作業模擬</div>
+    <div class="bar"><i></i></div>
+    <div class="s">載入中…<br>第一次開啟需要下載約 10 MB，之後可離線使用</div>
+  </div>
+  <div id="update-bar"><span>已下載新版本</span><button type="button" onclick="location.reload()">重新載入</button></div>
+  <div id="safe-probe"></div>
+
+  <script>
+    // iPhone 瀏海、底部指示條的安全區域（px）：[上, 右, 下, 左]；由 APP 讀取後自行留白
+    window.craneSafeArea = function () {
+      var cs = getComputedStyle(document.getElementById('safe-probe'));
+      return [cs.paddingTop, cs.paddingRight, cs.paddingBottom, cs.paddingLeft].map(function (v) {
+        return parseFloat(v) || 0;
+      });
+    };
+
+    // 背景圖：縮到最長邊 maxSide px 以內，轉成 JPEG data URL（手機照片很大，存檔才放得下）
+    window.craneImageToDataUrl = async function (bytes, mime, maxSide) {
+      var blob = new Blob([bytes], { type: mime || 'image/png' });
+      var src;
+      try {
+        src = await createImageBitmap(blob);
+      } catch (e) {
+        var url = URL.createObjectURL(blob);
+        try {
+          src = await new Promise(function (ok, fail) {
+            var im = new Image();
+            im.onload = function () { ok(im); };
+            im.onerror = fail;
+            im.src = url;
+          });
+        } finally {
+          setTimeout(function () { URL.revokeObjectURL(url); }, 2000);
+        }
+      }
+      var w0 = src.width, h0 = src.height;
+      var s = Math.min(1, maxSide / Math.max(w0, h0));
+      var w = Math.max(1, Math.round(w0 * s)), h = Math.max(1, Math.round(h0 * s));
+      var c = document.createElement('canvas');
+      c.width = w;
+      c.height = h;
+      var ctx = c.getContext('2d');
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, w, h);
+      ctx.drawImage(src, 0, 0, w, h);
+      return c.toDataURL('image/jpeg', 0.85);
+    };
+
+    // 離線快取（service worker）：有新版本時顯示「重新載入」
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function () {
+        var hadController = !!navigator.serviceWorker.controller;
+        navigator.serviceWorker.register('sw.js').catch(function () {});
+        navigator.serviceWorker.addEventListener('controllerchange', function () {
+          if (hadController) document.getElementById('update-bar').style.display = 'flex';
+          hadController = true;
+        });
+      });
+    }
+  </script>
+  <script src="flutter_bootstrap.js" async></script>
+</body>
+</html>

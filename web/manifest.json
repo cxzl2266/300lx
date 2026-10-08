@@ -1,0 +1,20 @@
+{
+  "name": "吊車作業模擬",
+  "short_name": "吊車模擬",
+  "id": "./",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#f3f5f7",
+  "theme_color": "#ffffff",
+  "lang": "zh-Hant-TW",
+  "description": "吊車作業模擬（KATO SR-300LX）：半徑、鉤底離地高度、額定荷重與吊臂淨空檢查。僅供規劃參考。",
+  "prefer_related_applications": false,
+  "icons": [
+    { "src": "icons/Icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icons/Icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icons/Icon-maskable-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "icons/Icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
